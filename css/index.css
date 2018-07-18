@@ -10,7 +10,7 @@ html, body {
     display: block;
     width: 100vw;
     height: 12.5vh;
-    background:#222;
+    background:#f3f3f3;
 }
 
 #audio {
@@ -26,7 +26,7 @@ html, body {
     /* margin: auto auto; */
     width: 20vw;
     height: 100%;
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1);
 }
 
 .monitor-label {

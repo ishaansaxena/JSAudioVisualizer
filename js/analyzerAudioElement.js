@@ -59,12 +59,13 @@ var handleSoundAllowed = function(stream) {
         var parent = document.getElementById("container");
         for (var i = 0; i < BIN_LABELS.length; i++) {
             var elements = getLabeledElement(BIN_LABELS[i]);
+           
+            BIN_ELEMENTS.push(elements[1]);
             
             parent.appendChild(elements[0]);
             BIN_PARENTS.push(elements[0]);
-
-            BIN_ELEMENTS.push(elements[1]);
         }
+        cycleParentColor();
     }
 
     var inplaceHzToIndex = function() {
@@ -98,8 +99,11 @@ var handleSoundAllowed = function(stream) {
         inplaceHzToIndex();
     }
 
-    var getRandomColor = function() {
-        return COLORS[Math.floor(Math.random() * COLORS.length)];;
+    var getRandomColorSet = function() {
+        var index = Math.floor(Math.random() * COLORS.length);
+        COLOR_INDEX = (index == COLOR_INDEX) ? index + 1: index;
+        console.log(COLORS[COLOR_INDEX]);
+        return COLOR_SET[COLORS[COLOR_INDEX]];
     }
 
     var getTrueIntensity = function(frequencyIndex) {
@@ -127,6 +131,15 @@ var handleSoundAllowed = function(stream) {
         return getBinIntensity(lowerFrequencyIndex, upperFrequencyIndex, getAdjustedIntensity);
     }
 
+    var cycleParentColor = function() {
+        var colorSet = getRandomColorSet();
+        var index = 0;
+        // console.log(colorSet);
+        BIN_PARENTS.forEach(parent => {
+            parent.style.background = colorSet[index++];
+        });
+    }
+
     var startAnalyser = function() {
         initalizeAnalyser(stream);
     }
@@ -152,9 +165,7 @@ var handleSoundAllowed = function(stream) {
             if (i == 0) {
 
                 if (BASS_HIST_VALUE < BASS_THRESHOLD - THRESHOLD_VARIANCE && binIntensity > BASS_THRESHOLD) {
-                    BIN_PARENTS.forEach(parent => {
-                        parent.style.background = getRandomColor();
-                    });
+                    cycleParentColor();
                 }
 
                 BASS_HIST_VALUE = binIntensity;
