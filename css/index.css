@@ -1,3 +1,30 @@
+html, body {
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+}
+
 .monitor {
     display: block;
+    width: 100vw;
+    height: 12.5vh;
+    background:#222;
+}
+
+#audio, .monitor-label {
+    display: block;
+    position: relative;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.monitor-value {
+    display: block;
+    /* margin: auto auto; */
+    width: 20vw;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.1);
 }
