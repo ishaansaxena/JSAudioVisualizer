@@ -4,11 +4,13 @@ var handleSoundAllowed = function(stream) {
      * Constants
      */
 
-    let SCALE = 1.0;                    // Visual Scaling Factor
+    let SCALE = 100.0/255.0;            // Visual Scaling Factor
     let MAX_FREQUENCY_INDEX = 1024;     // Frequency Bins => FFTSize = 2048
     let MAX_DECIBALS = 255;             // Maximum dB value
     let FREQUENCY_RANGE = 24000;        // Frequency Range of Bins => Bin_0 = [0, ~23.4]
-
+    var BASS_HIST_VALUE = 0;            // Keep track of bass dB values
+    var BASS_THRESHOLD = 55;
+    var THRESHOLD_VARIANCE = 0;
 
     /**
      * Bin Sizes
@@ -18,6 +20,7 @@ var handleSoundAllowed = function(stream) {
     var BIN_UPPER_LIMITS = [60, 250, 500, 2000, 4000, 6000, 24000];
     var BIN_LABELS = ["Sub-Bass", "True-Bass", "Lower-Mid", "Mid-Range", "Higher-Mid", "Presence", "Brilliance"];
     var BIN_ELEMENTS = new Array();
+    var BIN_PARENTS = new Array();
 
 
     /**
@@ -41,13 +44,13 @@ var handleSoundAllowed = function(stream) {
         elLabel.classList.add("monitor-label");
         elLabel.innerHTML = label
 
-        var elInner = document.createElement("progress");
+        var elInner = document.createElement("div");
         elInner.classList.add("monitor-value");
         elInner.max = MAX_DECIBALS;
         elInner.value = 0;
 
-        elOuter.appendChild(elLabel);
         elOuter.appendChild(elInner);
+        elOuter.appendChild(elLabel);
 
         return [elOuter, elInner];
     }
@@ -56,9 +59,13 @@ var handleSoundAllowed = function(stream) {
         var parent = document.getElementById("container");
         for (var i = 0; i < BIN_LABELS.length; i++) {
             var elements = getLabeledElement(BIN_LABELS[i]);
-            parent.appendChild(elements[0]);
+           
             BIN_ELEMENTS.push(elements[1]);
+            
+            parent.appendChild(elements[0]);
+            BIN_PARENTS.push(elements[0]);
         }
+        cycleParentColor();
     }
 
     var inplaceHzToIndex = function() {
@@ -78,6 +85,8 @@ var handleSoundAllowed = function(stream) {
         audioContext = new AudioContext();
         audioStream = audioContext.createMediaStreamSource(stream);
         analyser = audioContext.createAnalyser();
+        audioStream.connect(audioContext.destination);
+        analyser.connect(audioContext.destination);
 
         // Configure analyser
         analyser.fftSize = MAX_FREQUENCY_INDEX * 2;
@@ -90,12 +99,19 @@ var handleSoundAllowed = function(stream) {
         inplaceHzToIndex();
     }
 
+    var getRandomColorSet = function() {
+        var index = Math.floor(Math.random() * COLORS.length);
+        COLOR_INDEX = (index == COLOR_INDEX) ? index + 1: index;
+        console.log(COLORS[COLOR_INDEX]);
+        return COLOR_SET[COLORS[COLOR_INDEX]];
+    }
+
     var getTrueIntensity = function(frequencyIndex) {
         return frequencyArray[frequencyIndex];
     }
 
     var getAdjustedIntensity = function(frequencyIndex) {
-        return frequencyArray[frequencyIndex]/SCALE;
+        return frequencyArray[frequencyIndex] * SCALE;
     } 
 
     var getBinIntensity = function(lowerFrequencyIndex, upperFrequencyIndex, intensityFunction) {
@@ -113,6 +129,15 @@ var handleSoundAllowed = function(stream) {
 
     var getAdjustedBinIntensity = function(lowerFrequencyIndex, upperFrequencyIndex) {
         return getBinIntensity(lowerFrequencyIndex, upperFrequencyIndex, getAdjustedIntensity);
+    }
+
+    var cycleParentColor = function() {
+        var colorSet = getRandomColorSet();
+        var index = 0;
+        // console.log(colorSet);
+        BIN_PARENTS.forEach(parent => {
+            parent.style.background = colorSet[index++];
+        });
     }
 
     var startAnalyser = function() {
@@ -134,7 +159,19 @@ var handleSoundAllowed = function(stream) {
             var upper = BIN_UPPER_LIMITS[i];
             
             var binIntensity = getAdjustedBinIntensity(lower, upper);
-            el.value = (binIntensity > MAX_DECIBALS) ? MAX_DECIBALS : binIntensity;
+            binIntensity = (binIntensity > 100) ? 100 : binIntensity;
+
+            // Sub Bass
+            if (i == 0) {
+
+                if (BASS_HIST_VALUE < BASS_THRESHOLD - THRESHOLD_VARIANCE && binIntensity > BASS_THRESHOLD) {
+                    cycleParentColor();
+                }
+
+                BASS_HIST_VALUE = binIntensity;
+            }            
+
+            el.style.width = binIntensity + "vw";
 
             lower = upper;
         }

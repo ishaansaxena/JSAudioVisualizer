@@ -9,7 +9,7 @@ var handleSoundAllowed = function(stream) {
     let MAX_DECIBALS = 255;             // Maximum dB value
     let FREQUENCY_RANGE = 24000;        // Frequency Range of Bins => Bin_0 = [0, ~23.4]
     var BASS_HIST_VALUE = 0;            // Keep track of bass dB values
-    var BASS_THRESHOLD = 66;
+    var BASS_THRESHOLD = 62.5;
     var THRESHOLD_VARIANCE = 0;
 
     /**
@@ -192,17 +192,6 @@ var handleSoundNotAllowed = function(error) {
     alert("Please provide access to microphone to use the visualizer.");
     window.location.reload(false);    
 }
-
-// window.onload = function() {
-//     'use strict';
-
-//     navigator.getUserMedia(
-//         {audio:true},
-//         handleSoundAllowed,
-//         handleSoundNotAllowed
-//     );
-// }
-
 
 window.onload = function() {
     'use strict';
