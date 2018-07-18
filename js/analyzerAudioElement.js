@@ -72,12 +72,14 @@ var handleSoundAllowed = function(stream) {
     
     var initalizeAnalyser = function(stream) {
         // Make AudioStream persist throughout the session
-        window.persistAudioStream = true;
+        // window.persistAudioStream = true;
         
         // Initialize stream and analyser
         audioContext = new AudioContext();
-        audioStream = audioContext.createMediaStreamSource(stream);
+        audioStream = audioContext.createMediaElementSource(stream);
         analyser = audioContext.createAnalyser();
+        audioStream.connect(audioContext.destination);
+        analyser.connect(audioContext.destination);
 
         // Configure analyser
         analyser.fftSize = MAX_FREQUENCY_INDEX * 2;
@@ -156,12 +158,21 @@ var handleSoundNotAllowed = function(error) {
     window.location.reload(false);    
 }
 
+// window.onload = function() {
+//     'use strict';
+
+//     navigator.getUserMedia(
+//         {audio:true},
+//         handleSoundAllowed,
+//         handleSoundNotAllowed
+//     );
+// }
+
+
 window.onload = function() {
     'use strict';
 
-    navigator.getUserMedia(
-        {audio:true},
-        handleSoundAllowed,
-        handleSoundNotAllowed
-    );
+    var audio = document.getElementById('audio');
+    audio.crossOrigin = "anonymous";
+    handleSoundAllowed(audio);
 }
