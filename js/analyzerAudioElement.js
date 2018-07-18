@@ -9,8 +9,8 @@ var handleSoundAllowed = function(stream) {
     let MAX_DECIBALS = 255;             // Maximum dB value
     let FREQUENCY_RANGE = 24000;        // Frequency Range of Bins => Bin_0 = [0, ~23.4]
     var BASS_HIST_VALUE = 0;            // Keep track of bass dB values
-    var BASS_THRESHOLD = 80;
-    let COLORS = ["#00b16a", "#CC0033", "#22313f"];
+    var BASS_THRESHOLD = 66;
+    var THRESHOLD_VARIANCE = 0;
 
     /**
      * Bin Sizes
@@ -50,7 +50,7 @@ var handleSoundAllowed = function(stream) {
         elInner.value = 0;
 
         elOuter.appendChild(elInner);
-        // elOuter.appendChild(elLabel);
+        elOuter.appendChild(elLabel);
 
         return [elOuter, elInner];
     }
@@ -148,10 +148,10 @@ var handleSoundAllowed = function(stream) {
             var binIntensity = getAdjustedBinIntensity(lower, upper);
             binIntensity = (binIntensity > 100) ? 100 : binIntensity;
 
-            // Bass
-            if (i == 1) {
+            // Sub Bass
+            if (i == 0) {
 
-                if (BASS_HIST_VALUE < BASS_THRESHOLD && binIntensity >= BASS_THRESHOLD) {
+                if (BASS_HIST_VALUE < BASS_THRESHOLD - THRESHOLD_VARIANCE && binIntensity > BASS_THRESHOLD) {
                     BIN_PARENTS.forEach(parent => {
                         parent.style.background = getRandomColor();
                     });
