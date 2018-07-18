@@ -199,4 +199,13 @@ window.onload = function() {
     var audio = document.getElementById('audio');
     audio.crossOrigin = "anonymous";
     handleSoundAllowed(audio);
+
+    // window.addEventListener("click", function() {
+    //     if (audio.paused) {
+    //         audio.play();
+    //     } else {
+    //         audio.pause();
+    //     }
+    // });
+
 }
