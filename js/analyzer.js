@@ -1,5 +1,5 @@
 var handleSoundAllowed = function(stream) {
-    
+
     /**
      * Constants
      */
@@ -35,7 +35,7 @@ var handleSoundAllowed = function(stream) {
      */
 
     var getLabeledElement = function(label) {
-        
+
         var elOuter = document.createElement("div");
         elOuter.classList.add("monitor")
         elOuter.id = label;
@@ -59,9 +59,9 @@ var handleSoundAllowed = function(stream) {
         var parent = document.getElementById("container");
         for (var i = 0; i < BIN_LABELS.length; i++) {
             var elements = getLabeledElement(BIN_LABELS[i]);
-           
+
             BIN_ELEMENTS.push(elements[1]);
-            
+
             parent.appendChild(elements[0]);
             BIN_PARENTS.push(elements[0]);
         }
@@ -76,11 +76,11 @@ var handleSoundAllowed = function(stream) {
             binSum += BIN_UPPER_LIMITS;
         }
     }
-    
+
     var initalizeAnalyser = function(stream) {
         // Make AudioStream persist throughout the session
         window.persistAudioStream = true;
-        
+
         // Initialize stream and analyser
         audioContext = new AudioContext();
         audioStream = audioContext.createMediaStreamSource(stream);
@@ -94,7 +94,7 @@ var handleSoundAllowed = function(stream) {
 
         // Create frequency array
         frequencyArray = new Uint8Array(analyser.frequencyBinCount);
-    
+
         initializeDOM();
         inplaceHzToIndex();
     }
@@ -112,7 +112,7 @@ var handleSoundAllowed = function(stream) {
 
     var getAdjustedIntensity = function(frequencyIndex) {
         return frequencyArray[frequencyIndex] * SCALE;
-    } 
+    }
 
     var getBinIntensity = function(lowerFrequencyIndex, upperFrequencyIndex, intensityFunction) {
         var binIntensity = 0;
@@ -157,7 +157,7 @@ var handleSoundAllowed = function(stream) {
         for (var i = 0; i < BIN_UPPER_LIMITS.length; i++) {
             var el = BIN_ELEMENTS[i];
             var upper = BIN_UPPER_LIMITS[i];
-            
+
             var binIntensity = getAdjustedBinIntensity(lower, upper);
             binIntensity = (binIntensity > 100) ? 100 : binIntensity;
 
@@ -169,13 +169,13 @@ var handleSoundAllowed = function(stream) {
                 }
 
                 BASS_HIST_VALUE = binIntensity;
-            }            
+            }
 
             el.style.width = binIntensity + "vw";
 
             lower = upper;
         }
-        
+
         // console.log("\n" + consoleStr);
     }
 
@@ -190,7 +190,7 @@ var handleSoundAllowed = function(stream) {
 
 var handleSoundNotAllowed = function(error) {
     alert("Please provide access to microphone to use the visualizer.");
-    window.location.reload(false);    
+    window.location.reload(false);
 }
 
 window.onload = function() {
