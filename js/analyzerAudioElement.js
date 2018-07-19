@@ -9,7 +9,7 @@ var handleSoundAllowed = function(stream) {
     let MAX_DECIBALS = 255;             // Maximum dB value
     let FREQUENCY_RANGE = 24000;        // Frequency Range of Bins => Bin_0 = [0, ~23.4]
     var HIST_VALUE = 0;                 // Keep track of bass dB values
-    var THRESHOLD = 65;
+    var THRESHOLD = 60;
     var THRESHOLD_VARIANCE = 0;
 
     /**
@@ -21,13 +21,13 @@ var handleSoundAllowed = function(stream) {
     let BIN_LABELS = ["Sub-Bass", "True-Bass", "Lower-Mid", "Mid-Range", "Higher-Mid", "Presence", "Brilliance"];
     var BIN_ELEMENTS = new Array();
     var BIN_PARENTS = new Array();
-    let BIN_WEIGHTS = [0.6, 0.2, 0.1, 0.05, 0.025, 0.025, 0];
+    let BIN_WEIGHTS = [1, 0, 0, 0, 0, 0, 0];
 
     /**
      * WebAudio API Elements
      */
 
-    var audioContext, audioStream, analyser, frequencyArray;
+    var audioContext, audioStream, analyser, filter, filterAnalyser, frequencyArray, filteredArray;
 
 
     /**
@@ -83,17 +83,30 @@ var handleSoundAllowed = function(stream) {
 
         // Initialize stream and analyser
         audioContext = new AudioContext();
-        audioStream = audioContext.createMediaElementSource(stream);
-        analyser = audioContext.createAnalyser();
-        audioStream.connect(audioContext.destination);
-        analyser.connect(audioContext.destination);
 
-        // Configure analyser
+        audioStream = audioContext.createMediaElementSource(stream);
+
+        analyser = audioContext.createAnalyser();
         analyser.fftSize = MAX_FREQUENCY_INDEX * 2;
+
+        filter = audioContext.createBiquadFilter();
+        filter.type = "lowshelf";
+        filter.frequency.setValueAtTime(1000, audioContext.currentTime);
+
+        filterAnalyser = audioContext.createAnalyser()
+        filterAnalyser.fftSize = MAX_FREQUENCY_INDEX * 2;
+
+        // Set audio output
+        audioStream.connect(audioContext.destination);
+
+        // Configure connections
         audioStream.connect(analyser);
+        analyser.connect(filter);
+        filter.connect(filterAnalyser);
 
         // Create frequency array
         frequencyArray = new Uint8Array(analyser.frequencyBinCount);
+        filteredArray = new Uint8Array(analyser.frequencyBinCount);
 
         initializeDOM();
         inplaceHzToIndex();
@@ -106,29 +119,29 @@ var handleSoundAllowed = function(stream) {
         return COLOR_SET[COLORS[COLOR_INDEX]];
     }
 
-    var getTrueIntensity = function(frequencyIndex) {
+    var getTrueIntensity = function(frequencyArray, frequencyIndex) {
         return frequencyArray[frequencyIndex];
     }
 
-    var getAdjustedIntensity = function(frequencyIndex) {
+    var getAdjustedIntensity = function(frequencyArray, frequencyIndex) {
         return frequencyArray[frequencyIndex] * SCALE;
     }
 
-    var getBinIntensity = function(lowerFrequencyIndex, upperFrequencyIndex, intensityFunction) {
+    var getBinIntensity = function(frequencyArray, lowerFrequencyIndex, upperFrequencyIndex, intensityFunction) {
         var binIntensity = 0;
         for (var i = lowerFrequencyIndex; i < upperFrequencyIndex; i++) {
-            binIntensity += intensityFunction(i);
+            binIntensity += intensityFunction(frequencyArray, i);
         }
         binIntensity = binIntensity / (upperFrequencyIndex - lowerFrequencyIndex);
         return binIntensity;
     }
 
-    var getTrueBinIntensity = function(lowerFrequencyIndex, upperFrequencyIndex) {
-        return getBinIntensity(lowerFrequencyIndex, upperFrequencyIndex, getTrueIntensity);
+    var getTrueBinIntensity = function(frequencyArray, lowerFrequencyIndex, upperFrequencyIndex) {
+        return getBinIntensity(frequencyArray, lowerFrequencyIndex, upperFrequencyIndex, getTrueIntensity);
     }
 
-    var getAdjustedBinIntensity = function(lowerFrequencyIndex, upperFrequencyIndex) {
-        return getBinIntensity(lowerFrequencyIndex, upperFrequencyIndex, getAdjustedIntensity);
+    var getAdjustedBinIntensity = function(frequencyArray, lowerFrequencyIndex, upperFrequencyIndex) {
+        return getBinIntensity(frequencyArray, lowerFrequencyIndex, upperFrequencyIndex, getAdjustedIntensity);
     }
 
     var cycleParentColor = function() {
@@ -150,6 +163,7 @@ var handleSoundAllowed = function(stream) {
             isValidBeat = true;
         }
         HIST_VALUE = intensity;
+        // console.log(HIST_VALUE)
         return isValidBeat;
     }
 
@@ -162,23 +176,24 @@ var handleSoundAllowed = function(stream) {
 
         // Get frequency data from analyzer
         analyser.getByteFrequencyData(frequencyArray);
+        filterAnalyser.getByteFrequencyData(filteredArray);
 
         // var consoleStr = new String();
 
         // For each bin, get the intensities
         var fftMeasure = new Array();
-
         var lower = 0;
         for (var i = 0; i < BIN_UPPER_LIMITS.length; i++) {
             var el = BIN_ELEMENTS[i];
             var upper = BIN_UPPER_LIMITS[i];
 
-            var binIntensity = getAdjustedBinIntensity(lower, upper);
+            var binIntensity = getAdjustedBinIntensity(frequencyArray, lower, upper);
             binIntensity = (binIntensity > 100) ? 100 : binIntensity;
-
-            fftMeasure.push(binIntensity)
-
             el.style.width = binIntensity + "vw";
+
+            var filteredIntensity = getAdjustedBinIntensity(filteredArray, lower, upper);
+            filteredIntensity = (filteredIntensity > 100) ? 100 : filteredIntensity;
+            fftMeasure.push(filteredIntensity);
 
             lower = upper;
         }
