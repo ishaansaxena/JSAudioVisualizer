@@ -8,8 +8,8 @@ var handleSoundAllowed = function(stream) {
     let MAX_FREQUENCY_INDEX = 1024;     // Frequency Bins => FFTSize = 2048
     let MAX_DECIBALS = 255;             // Maximum dB value
     let FREQUENCY_RANGE = 24000;        // Frequency Range of Bins => Bin_0 = [0, ~23.4]
-    var BASS_HIST_VALUE = 0;            // Keep track of bass dB values
-    var BASS_THRESHOLD = 62.5;
+    var HIST_VALUE = 0;                 // Keep track of bass dB values
+    var THRESHOLD = 65;
     var THRESHOLD_VARIANCE = 0;
 
     /**
@@ -18,10 +18,10 @@ var handleSoundAllowed = function(stream) {
      */
 
     var BIN_UPPER_LIMITS = [60, 250, 500, 2000, 4000, 6000, 24000];
-    var BIN_LABELS = ["Sub-Bass", "True-Bass", "Lower-Mid", "Mid-Range", "Higher-Mid", "Presence", "Brilliance"];
+    let BIN_LABELS = ["Sub-Bass", "True-Bass", "Lower-Mid", "Mid-Range", "Higher-Mid", "Presence", "Brilliance"];
     var BIN_ELEMENTS = new Array();
     var BIN_PARENTS = new Array();
-
+    let BIN_WEIGHTS = [0.6, 0.2, 0.1, 0.05, 0.025, 0.025, 0];
 
     /**
      * WebAudio API Elements
@@ -140,6 +140,19 @@ var handleSoundAllowed = function(stream) {
         });
     }
 
+    var isBeat = function(fftMeasure) {
+        var intensity = 0;
+        var isValidBeat = false;
+        for (var i = 0; i < fftMeasure.length; i++) {
+            intensity += fftMeasure[i] * BIN_WEIGHTS[i];
+        }
+        if (HIST_VALUE < THRESHOLD - THRESHOLD_VARIANCE && intensity > THRESHOLD) {
+            isValidBeat = true;
+        }
+        HIST_VALUE = intensity;
+        return isValidBeat;
+    }
+
     var startAnalyser = function() {
         initalizeAnalyser(stream);
     }
@@ -153,6 +166,8 @@ var handleSoundAllowed = function(stream) {
         // var consoleStr = new String();
 
         // For each bin, get the intensities
+        var fftMeasure = new Array();
+
         var lower = 0;
         for (var i = 0; i < BIN_UPPER_LIMITS.length; i++) {
             var el = BIN_ELEMENTS[i];
@@ -161,19 +176,15 @@ var handleSoundAllowed = function(stream) {
             var binIntensity = getAdjustedBinIntensity(lower, upper);
             binIntensity = (binIntensity > 100) ? 100 : binIntensity;
 
-            // Sub Bass
-            if (i == 0) {
-
-                if (BASS_HIST_VALUE < BASS_THRESHOLD - THRESHOLD_VARIANCE && binIntensity > BASS_THRESHOLD) {
-                    cycleParentColor();
-                }
-
-                BASS_HIST_VALUE = binIntensity;
-            }
+            fftMeasure.push(binIntensity)
 
             el.style.width = binIntensity + "vw";
 
             lower = upper;
+        }
+
+        if (isBeat(fftMeasure)) {
+            cycleParentColor();
         }
 
         // console.log("\n" + consoleStr);
